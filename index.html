@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>Casamento Eduardo & Amanda</title>
+<title>Eduardo & Amanda</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
@@ -193,8 +193,8 @@ function resetar() {
   progress.style.width = "0%";
 }
 
-// Confete 3D colorido
-function startConfetti3D(duration = 4000) {
+// Confete 3D colorido com fade-out
+function startConfetti3D(duration = 4000, fadeDuration = 1000) {
   const canvas = document.getElementById("confetti-canvas");
   const ctx = canvas.getContext("2d");
   canvas.width = window.innerWidth;
@@ -220,8 +220,14 @@ function startConfetti3D(duration = 4000) {
     });
   }
 
-  let startTime = Date.now();
+  const startTime = Date.now();
+  let fading = false;
+
   function draw() {
+    const elapsed = Date.now() - startTime;
+
+    if (elapsed > duration) fading = true; // começa fade-out
+
     ctx.clearRect(0,0,canvas.width,canvas.height);
     confettis.forEach(c=>{
       const perspective = 500/(500+c.z);
@@ -229,14 +235,18 @@ function startConfetti3D(duration = 4000) {
       ctx.translate(c.x, c.y);
       ctx.rotate(c.tiltAngle);
       ctx.rotate(c.rotation);
-      ctx.globalAlpha = c.alpha;
+      ctx.globalAlpha = fading ? Math.max(0, c.alpha * (1 - (elapsed - duration)/fadeDuration)) : c.alpha;
       ctx.fillStyle = c.color;
       ctx.fillRect(-c.size/2*perspective, -c.size/4*perspective, c.size*perspective, c.size/2*perspective);
       ctx.restore();
     });
+
     update();
-    if (Date.now() - startTime < duration) requestAnimationFrame(draw);
-    else ctx.clearRect(0,0,canvas.width,canvas.height);
+    if (!fading || elapsed - duration < fadeDuration) {
+      requestAnimationFrame(draw);
+    } else {
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+    }
   }
 
   function update() {
@@ -258,7 +268,7 @@ function startConfetti3D(duration = 4000) {
   draw();
 }
 
-// Envio com progresso suave e confete 3D colorido
+// Envio com progresso e confete 3D com fade
 form.onsubmit = (e) => {
   e.preventDefault();
   if (form.querySelector('input[name="_honey"]').value) return;
@@ -281,13 +291,14 @@ form.onsubmit = (e) => {
       form.classList.add("hidden");
       success.classList.remove("hidden");
 
-      // Confete 3D colorido
+      // Confete 3D colorido com fade-out
       startConfetti3D();
 
+      // Reset após 5s para dar tempo do fade-out terminar
       setTimeout(() => {
         resetar();
         window.scrollTo({ top: 0, behavior: "smooth" });
-      }, 2000);
+      }, 5000);
     }, 500);
   };
 
